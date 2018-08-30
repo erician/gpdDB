@@ -4,6 +4,16 @@ Checkpoints are writed to the log file, when the gpdDB first start or the dirty 
 the disk. We try to record as many checkpoints as possible, because it can be used to reduce the recovery 
 time when some failures happen, such as system failure, media failure, etc..
 
+the format of a recovery log header:
+
+offset:         ____________________
+0              |currentCheckPonitPos|
+8              |--------------------|
+               |headerLen           |
+10             |--------------------|
+               |version             |
+               |____________________|
+
 the format of a log record:
 
 offset:         ____________________

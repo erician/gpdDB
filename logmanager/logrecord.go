@@ -23,6 +23,11 @@ type LogRecord struct {
 	re chan struct{}
 }
 
+//some const values of LogRecord
+const (
+	LogRecordConstValueCheckpointSize int64 = 9
+)
+
 //ToBytes concert LogRecord to bytes
 func (lr *LogRecord) ToBytes(lsn int64) (bs []byte, err error) {
 	var valuesNeededConv []interface{}
