@@ -1,0 +1,31 @@
+CUrrently, we don't use the transaction, just applying checkpoint
+
+Checkpoints are writed to the log file, when the gpdDB first start or the dirty pages are flushing into 
+the disk. We try to record as many checkpoints as possible, because it can be used to reduce the recovery 
+time when some failures happen, such as system failure, media failure, etc..
+
+the format of a log record:
+
+offset:         ____________________
+x              |LSN                 |
+x+8            |--------------------|
+               |operation           |
+x+9            |--------------------|
+               |blkNum              |
+x+17           |--------------------|
+               |key len             |
+x+19           |--------------------|
+               |key string          |
+x+19+keyLen    |--------------------|
+               |value len           |
+x+21+keyLen    |--------------------|
+               |value string        |
+               |____________________|
+
+NOTE:
+LSN is log sequence number, start from 0; the following is all the operations:
+PUT, DELETE, ALLOCATE
+ALLOCATE is to allocate a new blank node, without key and value, so whose keyLen and valueLen is all ZERO.
+
+
+  

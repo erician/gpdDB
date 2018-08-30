@@ -1,0 +1,37 @@
+We use blink tree to organize the data, and one node of the tree occupies 1 block. 
+
+Leaf nodes(level is 0x0000) store data and index nodes(level is not 0x0000) stores indexes
+
+the format of supernode:
+offset:  ____________________
+0x00    |blkID               |
+        |rootNodeID          |
+header  |......              |
+        |____________________|
+
+the format of Node:
+offset:  ____________________
+0x00    |blkID               |
+        |......              |
+header  |......              |
+        |                    |
+0x28    |--------------------|
+        |slot0               |
+        |--------------------|
+record  |slot1               |
+        |--------------------|
+        |.......             |
+        |____________________|
+
+the format of slot:
+
+offset:         ____________________
+x              |keyLen              |
+x+2            |--------------------|
+               |key string          |
+x+2+keyLen     |--------------------|
+               |valueLen            |
+x+2+keyLen+2   |--------------------|
+               |value string        |
+               |____________________|
+  
