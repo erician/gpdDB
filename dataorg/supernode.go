@@ -1,8 +1,6 @@
 package dataorg
 
 import (
-	"log"
-
 	"github.com/erician/gpdDB/common/gpdconst"
 
 	"github.com/erician/gpdDB/utils/conv"
@@ -46,8 +44,8 @@ const (
 	SuperNodeConstValueLen     int16 = 0x23
 	SuperNodeConstValueVersion int8  = 0x01
 
-	SuperNodeInitValueAllPairsNum int64 = 0 //initvalue means the value will be changed
-	SuperNodeInitValueNextBlkNum  int64 = 1
+	SuperNodeInitValueAllPairsNum int64 = 0                            //initvalue means the value will be changed
+	SuperNodeInitValueNextBlkNum  int64 = gpdconst.RootNodeInitBlockID //same with gpdconst.RootNodeInitBlockID
 	SuperNodeInitValueRootNodeID  int64 = gpdconst.NotAllocatedBlockID
 )
 
@@ -72,120 +70,84 @@ func SuperNodeSetField(superNode []byte, pos int, bs []byte, bsStart int, len in
 }
 
 //SuperNodeGetField get a field
-func SuperNodeGetField(superNode []byte, pos int, fieldLen int) (bs []byte) {
+func SuperNodeGetField(superNode []byte, pos int, fieldLen int) []byte {
 	return NodeGetField(superNode, pos, fieldLen)
 }
 
 //SuperNodeSetBlkID set the supernode's blkID
 func SuperNodeSetBlkID(superNode []byte, blkID int64) {
-	bs, err := conv.Itob(blkID)
-	if err != nil {
-		log.Fatal("setblkid ", err)
-	}
+	bs, _ := conv.Itob(blkID)
 	SuperNodeSetField(superNode, int(SuperNodeOffBlkID), bs, 0, int(SuperNodeFieldSizeBlkID))
 }
 
 //SuperNodeGetBklID get the blkID
-func SuperNodeGetBklID(superNode []byte) int64 {
+func SuperNodeGetBklID(superNode []byte) (blkID int64) {
 	bs := SuperNodeGetField(superNode, int(SuperNodeOffBlkID), int(SuperNodeFieldSizeBlkID))
-	returnVal, err := conv.Btoi(bs)
-	if err != nil {
-		log.Fatal("getblkid ", err)
-	}
-	return int64(returnVal)
+	blkID, _ = conv.Btoi(bs)
+	return
 }
 
 //SuperNodeSetRootNodeID set the rootNodeID
 func SuperNodeSetRootNodeID(superNode []byte, rootNodeID int64) {
-	bs, err := conv.Itob(rootNodeID)
-	if err != nil {
-		log.Fatal("setrootnodeid ", err)
-	}
+	bs, _ := conv.Itob(rootNodeID)
 	SuperNodeSetField(superNode, int(SuperNodeOffRootNodeID), bs, 0, int(SuperNodeFieldSizeRootNodeID))
 }
 
 //SuperNodeGetRootNodeID get the rootNodeID
-func SuperNodeGetRootNodeID(superNode []byte) int64 {
+func SuperNodeGetRootNodeID(superNode []byte) (rootNodeID int64) {
 	bs := SuperNodeGetField(superNode, int(SuperNodeOffRootNodeID), int(SuperNodeFieldSizeRootNodeID))
-	returnVal, err := conv.Btoi(bs)
-	if err != nil {
-		log.Fatal("getrootnodeid ", err)
-	}
-	return int64(returnVal)
+	rootNodeID, _ = conv.Btoi(bs)
+	return
 }
 
 //SuperNodeSetAllPairsNum set the supernode's allPairsNum
 func SuperNodeSetAllPairsNum(superNode []byte, allPairsNum int64) {
-	bs, err := conv.Itob(allPairsNum)
-	if err != nil {
-		log.Fatal("setallpairsnum ", err)
-	}
+	bs, _ := conv.Itob(allPairsNum)
 	SuperNodeSetField(superNode, int(SuperNodeOffAllPairsNum), bs, 0, int(SuperNodeFieldSizeAllPairsNum))
 }
 
 //SuperNodeGetAllPairsNum get the allPairsNum
-func SuperNodeGetAllPairsNum(superNode []byte) int64 {
+func SuperNodeGetAllPairsNum(superNode []byte) (pairsNum int64) {
 	bs := SuperNodeGetField(superNode, int(SuperNodeOffAllPairsNum), int(SuperNodeFieldSizeAllPairsNum))
-	returnVal, err := conv.Btoi(bs)
-	if err != nil {
-		log.Fatal("getallpaisnum ", err)
-	}
-	return int64(returnVal)
+	pairsNum, _ = conv.Btoi(bs)
+	return
 }
 
 //SuperNodeSetNextBlkNum set the supernode's nextBlkNum
 func SuperNodeSetNextBlkNum(superNode []byte, nextBlkNum int64) {
-	bs, err := conv.Itob(nextBlkNum)
-	if err != nil {
-		log.Fatal("setnextblknum ", err)
-	}
+	bs, _ := conv.Itob(nextBlkNum)
 	SuperNodeSetField(superNode, int(SuperNodeOffNextBlkNum), bs, 0, int(SuperNodeFieldSizeNextBlkNum))
 }
 
 //SuperNodeGetNextBlkNum get the nextBlkNum
-func SuperNodeGetNextBlkNum(superNode []byte) int64 {
+func SuperNodeGetNextBlkNum(superNode []byte) (nextNum int64) {
 	bs := SuperNodeGetField(superNode, int(SuperNodeOffNextBlkNum), int(SuperNodeFieldSizeNextBlkNum))
-	returnVal, err := conv.Btoi(bs)
-	if err != nil {
-		log.Fatal("getnextblknum ", err)
-	}
-	return int64(returnVal)
+	nextNum, _ = conv.Btoi(bs)
+	return
 }
 
 //SuperNodeSetLen set the supernode's len
 func SuperNodeSetLen(superNode []byte, len int16) {
-	bs, err := conv.Itob(len)
-	if err != nil {
-		log.Fatal("setlen ", err)
-	}
+	bs, _ := conv.Itob(len)
 	SuperNodeSetField(superNode, int(SuperNodeOffLen), bs, 0, int(SuperNodeFieldSizeLen))
 }
 
 //SuperNodeGetLen get the len
 func SuperNodeGetLen(superNode []byte) int16 {
 	bs := SuperNodeGetField(superNode, int(SuperNodeOffLen), int(SuperNodeFieldSizeLen))
-	returnVal, err := conv.Btoi(bs)
-	if err != nil {
-		log.Fatal("getlen ", err)
-	}
-	return int16(returnVal)
+	len, _ := conv.Btoi(bs)
+	return int16(len)
 }
 
 //SuperNodeSetVersion set the supernode's version
 func SuperNodeSetVersion(superNode []byte, version int8) {
-	bs, err := conv.Itob(version)
-	if err != nil {
-		log.Fatal("setlen ", err)
-	}
+	bs, _ := conv.Itob(version)
 	SuperNodeSetField(superNode, int(SuperNodeOffVersion), bs, 0, int(SuperNodeFieldSizeVersion))
 }
 
 //SuperNodeGetVersion get the version
 func SuperNodeGetVersion(superNode []byte) int8 {
 	bs := SuperNodeGetField(superNode, int(SuperNodeOffVersion), int(SuperNodeFieldSizeLen))
-	returnVal, err := conv.Btoi(bs)
-	if err != nil {
-		log.Fatal("getlen ", err)
-	}
-	return int8(returnVal)
+	version, _ := conv.Btoi(bs)
+	return int8(version)
 }

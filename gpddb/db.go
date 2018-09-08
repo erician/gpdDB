@@ -93,12 +93,14 @@ func (db *GpdDb) getSuperNode() (ent *Ent, err error) {
 }
 
 func (db *GpdDb) getRootNode() (ent *Ent, err error) {
+	//there still exist bugs
 	rootNodeID := db.getRootNodeID()
 	if ent, err = db.cache.GetEnt(db.dbFile, rootNodeID); err == nil {
 		if rootNodeID == gpdconst.NotAllocatedBlockID {
 			ent.BlkID = gpdconst.RootNodeInitBlockID
 			dataorg.NodeSetBlkID(ent.Block[:], ent.BlkID)
 			dataorg.SuperNodeSetRootNodeID(db.superNode.Block[:], ent.BlkID)
+			dataorg.SuperNodeSetNextBlkNum(db.superNode.Block[:], gpdconst.RootNodeInitBlockID+1)
 			err = superNode.SyncBlk()
 		}
 	}
