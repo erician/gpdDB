@@ -1,4 +1,4 @@
-package logmanager
+package relog
 
 import (
 	"fmt"
@@ -38,8 +38,22 @@ const (
 const (
 	LogConstValueVersion             int8  = 1
 	LogConstValueHeaderLen           int16 = 0x10
-	LogInitValueCurrentCheckpointPos       = 0 + LogRecordConstValueCheckpointSize
+	LogInitValueCurrentCheckpointPos int64 = 0 + int64(LogConstValueHeaderLen) + LogRecordConstValueCheckpointSize
 )
+
+//InitLogHeader init log file's header, NOT sync to nonvolatile device, such as disk, SSD, etc
+func InitLogHeader(logFile *os.File) (err error) {
+	if err = LogSetCurrentCheckpointPos(logFile, LogInitValueCurrentCheckpointPos); err != nil {
+		return
+	}
+	if err = LogSetHeaderLen(logFile, LogConstValueHeaderLen); err != nil {
+		return
+	}
+	if err = LogSetVersion(logFile, LogConstValueVersion); err != nil {
+		return
+	}
+	return
+}
 
 //LogSetField set field of log
 func LogSetField(logFile *os.File, data interface{}, offser int64) error {

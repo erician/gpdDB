@@ -1,4 +1,4 @@
-package logmanager
+package relog
 
 import (
 	"fmt"
@@ -27,6 +27,13 @@ type LogRecord struct {
 const (
 	LogRecordConstValueCheckpointSize int64 = 9
 )
+
+//NewLogRecordCheckpoint create a log record of checkpoint
+func NewLogRecordCheckpoint() (lr *LogRecord) {
+	lr = new(LogRecord)
+	lr.Oparation = gpdconst.CHECKPOINT
+	return
+}
 
 //ToBytes concert LogRecord to bytes
 func (lr *LogRecord) ToBytes(lsn int64) (bs []byte, err error) {

@@ -63,6 +63,9 @@ func NodeInit(node []byte) {
 	NodeSetLen(node, NodeConstValueHeaderLen)
 	NodeSetHeaderLen(node, NodeConstValueHeaderLen)
 	NodeSetVersion(node, NodeConstValueVersion)
+
+	NodeSetNext(node, gpdconst.NotAllocatedBlockID)
+	NodeSetParent(node, gpdconst.NotAllocatedBlockID)
 }
 
 //NodeSetField set a field of node

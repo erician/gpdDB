@@ -1,4 +1,4 @@
-package logmanager
+package relog
 
 import (
 	"os"

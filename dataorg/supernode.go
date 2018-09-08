@@ -48,7 +48,7 @@ const (
 
 	SuperNodeInitValueAllPairsNum int64 = 0 //initvalue means the value will be changed
 	SuperNodeInitValueNextBlkNum  int64 = 1
-	SuperNodeInitValueRootNodeID  int64 = 1
+	SuperNodeInitValueRootNodeID  int64 = gpdconst.NotAllocatedBlockID
 )
 
 //const values of SuperNode

@@ -15,7 +15,7 @@ func TestSuperNodeInit(t *testing.T) {
 			node[SuperNodeOffBlkID:SuperNodeOffBlkID+SuperNodeFieldSizeBlkID])
 	}
 	if c := byteutil.ByteCmp(node[SuperNodeOffRootNodeID:SuperNodeOffRootNodeID+SuperNodeFieldSizeRootNodeID],
-		[]byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}); c != 0 {
+		[]byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}); c != 0 {
 		t.Error("expected: ", []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, "not: ",
 			node[SuperNodeOffRootNodeID:SuperNodeOffRootNodeID+SuperNodeFieldSizeRootNodeID])
 	}
