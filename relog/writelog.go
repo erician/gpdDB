@@ -7,10 +7,10 @@ import (
 )
 
 //WriteLogRecord write a LogRecord
-func (reLog *RecoveryLog) WriteLogRecord(lr *LogRecord) {
-	lr.re = make(chan struct{})
+func (reLog *RecoveryLog) WriteLogRecord(lr LogRecord) {
+	lr.SetChan(make(chan struct{}))
 	reLog.logRecordChan <- lr
-	<-lr.re
+	<-lr.GetChan()
 }
 
 //WriteLog this is a loop
@@ -19,7 +19,7 @@ func (reLog *RecoveryLog) WriteLog() {
 	for {
 		lr := <-reLog.logRecordChan
 		reLog.writeLogRecordToDisk(lr)
-		res = append(res, lr.re)
+		res = append(res, lr.GetChan())
 		syncLogChan := time.After(time.Duration(RecoveryLogDefaultSyncLogInterval) * time.Millisecond)
 	loop:
 		for {
@@ -28,7 +28,7 @@ func (reLog *RecoveryLog) WriteLog() {
 				break loop
 			case lr = <-reLog.logRecordChan:
 				reLog.writeLogRecordToDisk(lr)
-				res = append(res, lr.re)
+				res = append(res, lr.GetChan())
 			}
 		}
 		if err := reLog.syncLog(); err != nil {
@@ -49,11 +49,8 @@ func (reLog *RecoveryLog) syncLog() (err error) {
 	return
 }
 
-func (reLog *RecoveryLog) writeLogRecordToDisk(lr *LogRecord) (err error) {
-	bs, err := lr.ToBytes(reLog.nextLsn)
-	if err != nil {
-		return fmt.Errorf("write logrecord, %v", err)
-	}
+func (reLog *RecoveryLog) writeLogRecordToDisk(lr LogRecord) (err error) {
+	bs := lr.ToBytes(reLog.nextLsn)
 	reLog.logFile.Write(bs)
 	reLog.nextLsn++
 	return

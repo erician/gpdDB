@@ -16,7 +16,7 @@ const (
 //RecoveryLog just as the name
 type RecoveryLog struct {
 	logFile       *os.File
-	logRecordChan chan *LogRecord
+	logRecordChan chan LogRecord
 	nextLsn       int64
 }
 
@@ -38,7 +38,7 @@ func NewRecoveryLog(dbName string) (reLog *RecoveryLog, err error) {
 
 //InitRecoveryLog init some fields of RecoveryLog
 func (reLog *RecoveryLog) init(recovereLogName string) (err error) {
-	reLog.logRecordChan = make(chan *LogRecord, RecoveryLogDefaultLogRecordChanCapacity)
+	reLog.logRecordChan = make(chan LogRecord, RecoveryLogDefaultLogRecordChanCapacity)
 	reLog.nextLsn = 0
 	if _, err = os.Stat(recovereLogName); os.IsNotExist(err) == true {
 		if reLog.logFile, err = os.Create(recovereLogName); err != nil {

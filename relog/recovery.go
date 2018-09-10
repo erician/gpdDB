@@ -16,6 +16,5 @@ func (relog *RecoveryLog) doesNeedRecovery() (doesNeed bool, err error) {
 }
 
 func (relog *RecoveryLog) recover() (err error) {
-	checkPointPos, err := LogGetCurrentCheckpointPos(relog.logFile)
-
+	return
 }

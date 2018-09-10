@@ -16,8 +16,8 @@ type GpdDb struct {
 	dbFile    *os.File
 	reLog     *relog.RecoveryLog
 	cache     *cache.Cache
-	superNode *Ent
-	rootNode  *Ent
+	superNode *cache.Ent
+	rootNode  *cache.Ent
 }
 
 //NewDb create a new db
@@ -70,43 +70,53 @@ func RemoveDb(dbName string) (err error) {
 
 func (db *GpdDb) init(dbName string) (err error) {
 	if db.dbFile, err = dataorg.NewDbFile(dbName); err != nil {
-		return errors.NewErrCannotCreateOrOpenDbFile(err)
+		return errors.NewErrCannotCreateOrOpenDbFile(err.Error())
 	}
 	db.cache = cache.NewCache()
 	if db.superNode, err = db.getSuperNode(); err != nil {
-		return errors.FailedToGetNode(err)
+		return errors.NewErrFailedToGetNode(err.Error())
 	}
-	if db.rootNodeID, err = db.getRootNode(); err != nil {
-		return errors.FailedToGetNode(err)
+	if db.rootNode, err = db.getRootNode(); err != nil {
+		return errors.NewErrFailedToGetNode(err.Error())
 	}
 	if db.reLog, err = relog.NewRecoveryLog(dbName); err != nil {
-		return errors.NewErrCannotCreateOrOpenRecoveryLogFile(err)
+		return errors.NewErrCannotCreateOrOpenRecoveryLogFile(err.Error())
 	}
+	return
 }
 
-func (db *GpdDb) getNode(blkNum int64) (ent *Ent, err error) {
-	return db.cache.GetEnt(db.dbFile, blkNum)
+func (db *GpdDb) getNode(blkNum int64, doesReadFromFile bool) (ent *cache.Ent, err error) {
+	return db.cache.GetEnt(db.dbFile, blkNum, doesReadFromFile)
 }
 
-func (db *GpdDb) getSuperNode() (ent *Ent, err error) {
-	return getNode(dataorg.SuperNodeConstValueBlkID)
+func (db *GpdDb) getSuperNode() (ent *cache.Ent, err error) {
+	return db.getNode(dataorg.SuperNodeConstValueBlkID, true)
 }
 
-func (db *GpdDb) getRootNode() (ent *Ent, err error) {
+func (db *GpdDb) getRootNode() (ent *cache.Ent, err error) {
 	//there still exist bugs
 	rootNodeID := db.getRootNodeID()
-	if ent, err = db.cache.GetEnt(db.dbFile, rootNodeID); err == nil {
-		if rootNodeID == gpdconst.NotAllocatedBlockID {
-			ent.BlkID = gpdconst.RootNodeInitBlockID
-			dataorg.NodeSetBlkID(ent.Block[:], ent.BlkID)
-			dataorg.SuperNodeSetRootNodeID(db.superNode.Block[:], ent.BlkID)
-			dataorg.SuperNodeSetNextBlkNum(db.superNode.Block[:], gpdconst.RootNodeInitBlockID+1)
-			err = superNode.SyncBlk()
+	if rootNodeID == gpdconst.NotAllocatedBlockID {
+		nextBlkNum := dataorg.SuperNodeGetNextBlkNum(db.superNode.Block[:])
+		if ent, err = db.cache.GetEnt(db.dbFile, nextBlkNum, rootNodeID != gpdconst.NotAllocatedBlockID); err == nil {
+			dataorg.SuperNodeSetRootNodeID(db.superNode.Block[:], nextBlkNum)
+			dataorg.SuperNodeSetNextBlkNum(db.superNode.Block[:], nextBlkNum+1)
+			err = db.superNode.SyncBlk(db.dbFile)
 		}
+	} else {
+		ent, err = db.cache.GetEnt(db.dbFile, rootNodeID, true)
 	}
 	return
 }
 
 func (db *GpdDb) getRootNodeID() int64 {
 	return dataorg.SuperNodeGetRootNodeID(db.superNode.Block[:])
+}
+
+func (db *GpdDb) getNewEnt() (ent *cache.Ent) {
+	nextBlkNum := dataorg.SuperNodeGetNextBlkNum(db.superNode.Block[:])
+	ent, _ = db.cache.GetEnt(db.dbFile, nextBlkNum, false)
+	dataorg.SuperNodeSetNextBlkNum(db.superNode.Block[:], nextBlkNum+1)
+	db.reLog.WriteLogRecord(relog.NewLogRecordAllocate(nextBlkNum))
+	return
 }

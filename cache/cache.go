@@ -26,23 +26,28 @@ func NewCache() (cache *Cache) {
 }
 
 //GetEnt get an ent from cache, seach ents first, then search freeEnts
-//When get ent from freeEnts and blkNum is NotAllocatedBlockID, we won't read from dbFile
-func (cache *Cache) GetEnt(dbFile *os.File, blkNum int64) (ent *Ent, err error) {
+func (cache *Cache) GetEnt(file *os.File, blkNum int64, doesReadFromFile bool) (ent *Ent, err error) {
 	ent = getEntFromHashLinkList(cache.ents[blkNum%gpdconst.CacheEntDefaultNum], blkNum)
 	if ent != nil {
 		cache.freeEnts.RemoveWithBlkNum(blkNum)
 	} else {
 		ent = cache.freeEnts.PopLeft()
-		if blkNum != gpdconst.NotAllocatedBlockID {
-			if err = ent.ReadBlk(dbFile, blkNum); err == nil {
-				putEntInHashLinkList(cache.ents, ent, blkNum)
-			} else {
+		if ent.GetStat()&EntStatDelaywrite == EntStatDelaywrite {
+			if err = ent.WriteBlk(file); err != nil { //can be optimizated with go routine
+				return
+			}
+		}
+		if doesReadFromFile == true {
+			if err = ent.ReadBlk(file, blkNum); err != nil {
 				cache.freeEnts.PushLeft(ent)
+				return
 			}
 		} else {
 			dataorg.NodeInit(ent.Block[:])
-			putEntInHashLinkList(cache.ents, ent, blkNum)
+			dataorg.NodeSetBlkID(ent.Block[:], blkNum)
+			ent.BlkID = blkNum
 		}
+		putEntInHashLinkList(cache.ents, ent, blkNum)
 	}
 	return
 }
@@ -67,4 +72,9 @@ func getEntFromHashLinkList(cur *Ent, blkNum int64) *Ent {
 		cur = cur.Next
 	}
 	return cur
+}
+
+//ReleaseEnt release a ent
+func (cache *Cache) ReleaseEnt(ent *Ent) {
+	cache.freeEnts.PushRight(ent)
 }

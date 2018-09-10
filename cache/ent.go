@@ -42,9 +42,13 @@ func NewEnt() (ent *Ent) {
 }
 
 //ReadBlk read a block from file, and put into ent.Block
-func (ent *Ent) ReadBlk(file *os.File, blkNum int64) (err error) {
-	err = blkio.ReadBlk(file, ent.Block[:], blkNum)
-	return
+func (ent *Ent) ReadBlk(file *os.File, blkNum int64) error {
+	return blkio.ReadBlk(file, ent.Block[:], blkNum)
+}
+
+//WriteBlk write a block to file
+func (ent *Ent) WriteBlk(file *os.File) error {
+	return blkio.WriteBlk(file, ent.Block[:], ent.BlkID)
 }
 
 //SyncBlk sync a block
@@ -56,4 +60,14 @@ func (ent *Ent) SyncBlk(file *os.File) (err error) {
 		return
 	}
 	return
+}
+
+//SetStat set the ent's state
+func (ent *Ent) SetStat(stat int8) {
+	ent.Stat = stat
+}
+
+//GetStat get the ent's state
+func (ent *Ent) GetStat() int8 {
+	return ent.Stat
 }

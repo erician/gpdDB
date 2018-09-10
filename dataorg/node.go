@@ -2,7 +2,6 @@ package dataorg
 
 import (
 	"github.com/erician/gpdDB/common/gpdconst"
-	"github.com/erician/gpdDB/utils/byteutil"
 	"github.com/erician/gpdDB/utils/conv"
 	"github.com/erician/gpdDB/utils/readwrite"
 )
@@ -51,9 +50,9 @@ const (
 
 //some const values of Node
 const (
-	NodeKeyLenSize  int64 = 2               //the size of the length of key
-	NodeDataLenSize int64 = NodeKeyLenSize  //the size of the length of data
-	NodeSize        int64 = 4 * gpdconst.KB //equal to the block size
+	NodeKeyLenSize   int64 = 2               //the size of the length of key
+	NodeValueLenSize int64 = NodeKeyLenSize  //the size of the length of data
+	NodeSize         int64 = 4 * gpdconst.KB //equal to the block size
 )
 
 //NodeInit the Node's common field with the default value
@@ -86,7 +85,7 @@ func NodeSetKeyOrValue(node []byte, pos int, bs []byte, bsStart int, len int) in
 	return NodeSetField(node, NodeSetField(node, pos, lenBs, 0, int(NodeKeyLenSize)), bs, bsStart, len)
 }
 
-//NodeGetKeyOrValue get a key or value
+//NodeGetKeyOrValue get a key or value, inode can also use this func
 func NodeGetKeyOrValue(node []byte, pos int) (bs []byte) {
 	lenBs := NodeGetField(node, pos, int(NodeKeyLenSize))
 	len, _ := conv.Btoi(lenBs)
@@ -95,9 +94,9 @@ func NodeGetKeyOrValue(node []byte, pos int) (bs []byte) {
 
 //NodeNextField get the next field pos
 func NodeNextField(node []byte, pos int) int {
-	bs := NodeGetField(node, pos, int(NodeDataLenSize))
+	bs := NodeGetField(node, pos, int(NodeValueLenSize))
 	len, _ := conv.Btoi(bs)
-	return pos + int(NodeDataLenSize) + int(len)
+	return pos + int(NodeValueLenSize) + int(len)
 }
 
 //NodeNextKey get next key field pos
@@ -196,31 +195,12 @@ func NodeGetVersion(node []byte) int8 {
 	return int8(version)
 }
 
-//IsLeaf decide whether the node is leaf
-func IsLeaf(node []byte) bool {
+//NodeIsLeaf decide whether the node is leaf
+func NodeIsLeaf(node []byte) bool {
 	return NodeGetLevel(node) == NodeConstValueLeafLevel
 }
 
-//IsEnoughSpaceLeft to be sure if there is enough space to hold this pair
-func IsEnoughSpaceLeft(node []byte, pairLen int64) bool {
+//NodeIsEnoughSpaceLeft to be sure if there is enough space to hold this pair
+func NodeIsEnoughSpaceLeft(node []byte, pairLen int64) bool {
 	return int64(NodeGetLen(node))+pairLen < gpdconst.BlockSize
-}
-
-//FindInsertPos find the pos where the key shoud insert
-func FindInsertPos(node []byte, key string) (pos int, err error) {
-	insertKey := []byte(key)
-	nodeLen := NodeGetLen(node)
-	pos = int(NodeConstValueHeaderLen)
-	for pos < int(nodeLen) {
-		desKey := NodeGetKeyOrValue(node, pos)
-		result := byteutil.ByteCmp(insertKey, desKey)
-		if result >= 0 {
-			if result == 0 {
-
-			}
-			return pos, nil
-		}
-		pos = NodeNextKey(node, pos)
-	}
-	return
 }
