@@ -52,6 +52,7 @@ const (
 const (
 	NodeKeyLenSize   int64 = 2               //the size of the length of key
 	NodeValueLenSize int64 = NodeKeyLenSize  //the size of the length of data
+	NodeIndexLenSize int64 = NodeKeyLenSize
 	NodeSize         int64 = 4 * gpdconst.KB //equal to the block size
 )
 

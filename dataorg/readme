@@ -61,5 +61,12 @@ x+2+keyLen+2   |--------------------|
                |index               |
                |____________________|
 
+index and key
+
+leftIndex  | key | rightIndex
+NOTE: every key in the node pointed by leftIndex to is strickly smaller than key, and 
+the other is bigger than key 
+
+
 
 

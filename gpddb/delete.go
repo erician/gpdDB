@@ -11,7 +11,7 @@ import (
 func (db *GpdDb) Delete(key string) (err error) {
 	return
 }
-
+ 
 func (db *GpdDb) deletePairInLeaf(ent *cache.Ent, key string, pos int) {
 	value := dataorg.DNodeDeletePair(ent.Block[:], key, pos)
 	db.reLog.WriteLogRecord(relog.NewLogRecordUserOpDelete(ent.BlkID, key, value)) //log

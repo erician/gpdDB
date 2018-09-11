@@ -15,13 +15,13 @@ func DNodeGetPairLen(key string, value string) int {
 
 //DNodeFindInsertPos find the pos where the key shoud insert
 func DNodeFindInsertPos(node []byte, key string) (pos int, doesAlreadyExist bool) {
-	insertKey := []byte(key)
+	insertKey := []byte(key)  
 	nodeLen := NodeGetLen(node)
 	pos = int(NodeConstValueHeaderLen)
 	for pos < int(nodeLen) {
-		desKey := NodeGetKeyOrValue(node, pos)
+		desKey := NodeGetKeyOrValue(node, pos) 
 		result := byteutil.ByteCmp(insertKey, desKey)
-		if result >= 0 {
+		if result <= 0 {
 			if result == 0 {
 				return pos, true
 			}
@@ -59,6 +59,7 @@ func DNodeLeftShift(node []byte, pos int, distance int) {
 //DNodeFindSplitPos split the srcNode into secNode
 //To be simple, just split from the middile,
 //NOTE: the splitPos will be bigger the gpdconst.BlockSize/2
+//AND NEVER be the first pair, which is important in putPairInIndex to void same index
 func DNodeFindSplitPos(srcNode []byte) (splitPos int) {
 	splitPos = int(NodeGetHeaderLen(srcNode))
 	for splitPos < int(gpdconst.BlockSize/2) {

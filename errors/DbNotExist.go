@@ -7,7 +7,7 @@ type ErrDbNotExist struct {
 
 //NewErrDbNotExist just as the name
 func NewErrDbNotExist(text string) error {
-	return &ErrDbAlreadyExist{text}
+	return &ErrDbNotExist{text}
 }
 
 func (e *ErrDbNotExist) Error() string {

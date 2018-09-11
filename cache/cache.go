@@ -32,6 +32,7 @@ func (cache *Cache) GetEnt(file *os.File, blkNum int64, doesReadFromFile bool) (
 		cache.freeEnts.RemoveWithBlkNum(blkNum)
 	} else {
 		ent = cache.freeEnts.PopLeft()
+		ent.BlkID = blkNum
 		if ent.GetStat()&EntStatDelaywrite == EntStatDelaywrite {
 			if err = ent.WriteBlk(file); err != nil { //can be optimizated with go routine
 				return
@@ -45,7 +46,6 @@ func (cache *Cache) GetEnt(file *os.File, blkNum int64, doesReadFromFile bool) (
 		} else {
 			dataorg.NodeInit(ent.Block[:])
 			dataorg.NodeSetBlkID(ent.Block[:], blkNum)
-			ent.BlkID = blkNum
 		}
 		putEntInHashLinkList(cache.ents, ent, blkNum)
 	}
