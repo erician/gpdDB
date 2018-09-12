@@ -19,4 +19,5 @@ var OperationEnum = []gpdtype.Enum{
 	{Name: "DELETE", Value: DELETE},
 	{Name: "CHECKPOINT", Value: CHECKPOINT},
 	{Name: "ALLOCATE", Value: ALLOCATE},
+	{Name: "SETFIELD", Value: SETFIELD},
 }

@@ -14,7 +14,7 @@ func (reLog *RecoveryLog) WriteLogRecord(lr LogRecord) {
 }
 
 //WriteLog this is a loop
-func (reLog *RecoveryLog) WriteLog() {
+func (reLog *RecoveryLog) WriteLogRoutine() {
 	var res []chan struct{}
 	for {
 		lr := <-reLog.logRecordChan

@@ -2,8 +2,8 @@ package gpddb
 
 import (
 	"github.com/erician/gpdDB/cache"
-	"github.com/erician/gpdDB/dataorg"
 	"github.com/erician/gpdDB/common/gpdconst"
+	"github.com/erician/gpdDB/dataorg"
 	"github.com/erician/gpdDB/errors"
 	"github.com/erician/gpdDB/relog"
 	"github.com/erician/gpdDB/utils/conv"
@@ -18,7 +18,9 @@ func (db *GpdDb) Put(key string, value string) (err error) {
 		if curNode != db.rootNode {
 			db.cache.ReleaseEnt(curNode)
 		}
-		curNode, err = db.cache.GetEnt(db.dbFile, index, true)
+		if curNode, err = db.cache.GetEnt(db.dbFile, index, true); err != nil {
+			return errors.NewErrPutFailed(err.Error())
+		}
 	}
 	if secEntBlkNum, splitKey := db.putPairInLeaf(curNode, key, value); secEntBlkNum != 0 {
 		rightIndex, _ := conv.Itob(secEntBlkNum)
@@ -29,7 +31,7 @@ func (db *GpdDb) Put(key string, value string) (err error) {
 		curNode.SetStat(curNode.GetStat() | cache.EntStatDelaywrite)
 		db.cache.ReleaseEnt(curNode)
 	}
-	return errors.NewErrPutFailed(err.Error())
+	return
 }
 
 func (db *GpdDb) putPairInLeaf(ent *cache.Ent, key string, value string) (secEntBlkNum int64, splitKey string) {
@@ -41,7 +43,7 @@ func (db *GpdDb) putPairInLeaf(ent *cache.Ent, key string, value string) (secEnt
 		secEnt := db.getNewEnt()
 		secEntBlkNum = secEnt.BlkID
 		splitPos := db.splitLeaf(ent, secEnt)
-		splitKey = string(dataorg.NodeGetKeyOrValue(secEnt.Block[:], splitPos))
+		splitKey = string(dataorg.NodeGetKeyOrValue(secEnt.Block[:], int(dataorg.NodeGetHeaderLen(secEnt.Block[:]))))
 		if insertPos < splitPos {
 			db.insertPairInLeaf(ent, key, value, insertPos)
 		} else {
@@ -62,16 +64,16 @@ func (db *GpdDb) putPairInInternalRecursive(curNodeBlkID int64, key string, left
 		dataorg.SuperNodeSetRootNodeID(db.superNode.Block[:], rootEnt.BlkID)
 		t, _ := conv.Itob(rootEnt.BlkID)
 		db.reLog.WriteLogRecord(relog.NewLogRecordSetField(db.superNode.BlkID, int16(dataorg.SuperNodeOffRootNodeID), string(t)))
-	}else {
+	} else {
 		ent, _ := db.cache.GetEnt(db.dbFile, curNodeBlkID, true)
 		insertPos := dataorg.INodeFindInsertPos(ent.Block[:], key)
 		if dataorg.NodeIsEnoughSpaceLeft(ent.Block[:], int64(dataorg.INodeGetPairLen(key, rightIndex))) == false {
 			secEnt := db.getNewEnt()
 			splitPos, splitKey := db.splitIndex(ent, secEnt)
 			if insertPos < splitPos {
-				db.insertPairInLeaf(ent, key, rightIndex, insertPos)
+				db.insertPairInInternal(ent, key, rightIndex, insertPos)
 			} else {
-				db.insertPairInInternal(secEnt, key, rightIndex, 
+				db.insertPairInInternal(secEnt, key, rightIndex,
 					insertPos-splitPos-int(dataorg.NodeKeyLenSize)-len(splitKey)+int(dataorg.NodeGetHeaderLen(secEnt.Block[:])))
 			}
 			rightIndex, _ := conv.Itob(secEnt.BlkID)
@@ -86,9 +88,9 @@ func (db *GpdDb) putPairInInternalRecursive(curNodeBlkID int64, key string, left
 		ent.SetStat(ent.GetStat() | cache.EntStatDelaywrite)
 		db.cache.ReleaseEnt(ent)
 	}
-} 
+}
 
-func (db *GpdDb)insertPairInInternalRootFirstTime(rootEnt *cache.Ent, key string, leftIndex string, rightIndex string, level int64) {
+func (db *GpdDb) insertPairInInternalRootFirstTime(rootEnt *cache.Ent, key string, leftIndex string, rightIndex string, level int64) {
 	curPos := int(dataorg.NodeGetHeaderLen(rootEnt.Block[:]))
 	dataorg.NodeSetKeyOrValue(rootEnt.Block[:], int(curPos), []byte(leftIndex), 0, len(leftIndex))
 	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(db.superNode.BlkID, int16(curPos), string(leftIndex)))
@@ -106,7 +108,7 @@ func (db *GpdDb)insertPairInInternalRootFirstTime(rootEnt *cache.Ent, key string
 	t, _ := conv.Itob(len)
 	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(rootEnt.BlkID, int16(dataorg.NodeOffLen), string(t)))
 
-	dataorg.NodeSetLevel(rootEnt.Block[:], level)
+	dataorg.NodeSetLevel(rootEnt.Block[:], level+1)
 	t, _ = conv.Itob(level)
 	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(rootEnt.BlkID, int16(dataorg.NodeOffLevel), string(t)))
 
@@ -126,15 +128,25 @@ func (db *GpdDb)insertPairInInternalRootFirstTime(rootEnt *cache.Ent, key string
 func (db *GpdDb) insertPairInInternal(ent *cache.Ent, key string, index string, pos int) {
 	dataorg.INodeInsertPair(ent.Block[:], key, index, pos)
 	db.reLog.WriteLogRecord(relog.NewLogRecordUserOpPut(ent.BlkID, key, index)) //log
+
+	len := dataorg.NodeGetLen(ent.Block[:]) + int16(dataorg.INodeGetPairLen(key, index))
+	dataorg.NodeSetLen(ent.Block[:], len)
+	t, _ := conv.Itob(int16(len))
+	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(ent.BlkID, int16(dataorg.NodeOffLen), string(t))) //log
 }
 
-func (db *GpdDb) insertPairInLeaf(ent *cache.Ent, key string, value string, pos int) { 
+func (db *GpdDb) insertPairInLeaf(ent *cache.Ent, key string, value string, pos int) {
 	dataorg.DNodeInsertPair(ent.Block[:], key, value, pos)
 	db.reLog.WriteLogRecord(relog.NewLogRecordUserOpPut(ent.BlkID, key, value)) //log
+
+	len := dataorg.NodeGetLen(ent.Block[:]) + int16(dataorg.DNodeGetPairLen(key, value))
+	dataorg.NodeSetLen(ent.Block[:], len)
+	t, _ := conv.Itob(int16(len))
+	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(ent.BlkID, int16(dataorg.NodeOffLen), string(t))) //log
 }
 
 func (db *GpdDb) splitLeaf(ent *cache.Ent, secEnt *cache.Ent) int {
-	splitPos := dataorg.DNodeFindSplitPos(ent.Block[:]) 
+	splitPos := dataorg.DNodeFindSplitPos(ent.Block[:])
 	readwrite.WriteByte(secEnt.Block[:], int(dataorg.NodeGetHeaderLen(secEnt.Block[:])),
 		ent.Block[:], splitPos, int(dataorg.NodeGetLen(ent.Block[:]))-splitPos)
 	for curPos := int16(splitPos); curPos < dataorg.NodeGetLen(ent.Block[:]); {
@@ -167,12 +179,12 @@ func (db *GpdDb) splitLeaf(ent *cache.Ent, secEnt *cache.Ent) int {
 	return splitPos
 }
 
-func (db *GpdDb) splitIndex (ent *cache.Ent, secEnt *cache.Ent) (int, string) {
+func (db *GpdDb) splitIndex(ent *cache.Ent, secEnt *cache.Ent) (int, string) {
 	leftSplitPos := dataorg.INodeFindSplitPos(ent.Block[:])
 	rightSplitPos := dataorg.NodeNextField(ent.Block[:], leftSplitPos)
 	readwrite.WriteByte(secEnt.Block[:], int(dataorg.NodeGetHeaderLen(secEnt.Block[:])),
 		ent.Block[:], rightSplitPos, int(dataorg.NodeGetLen(ent.Block[:]))-rightSplitPos)
-	
+
 	splitKey := dataorg.NodeGetKeyOrValue(ent.Block[:], leftSplitPos)
 	splitIndex := dataorg.NodeGetKeyOrValue(ent.Block[:], rightSplitPos)
 	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(secEnt.BlkID, dataorg.NodeGetHeaderLen(secEnt.Block[:]), string(splitIndex)))
@@ -181,7 +193,7 @@ func (db *GpdDb) splitIndex (ent *cache.Ent, secEnt *cache.Ent) (int, string) {
 		key := dataorg.NodeGetKeyOrValue(ent.Block[:], int(curPos))
 		index := dataorg.NodeGetKeyOrValue(ent.Block[:], dataorg.NodeNextField(ent.Block[:], int(curPos)))
 
-		db.reLog.WriteLogRecord(relog.NewLogRecordUserOpPut(secEnt.BlkID, string(key), string(index))) //log 
+		db.reLog.WriteLogRecord(relog.NewLogRecordUserOpPut(secEnt.BlkID, string(key), string(index))) //log
 		db.reLog.WriteLogRecord(relog.NewLogRecordUserOpDelete(ent.BlkID, string(key), string(index))) //log
 
 		curPos = int16(dataorg.NodeNextKey(secEnt.Block[:], int(curPos)))
@@ -206,7 +218,7 @@ func (db *GpdDb) splitIndex (ent *cache.Ent, secEnt *cache.Ent) (int, string) {
 	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(secEnt.BlkID, int16(dataorg.NodeOffParent), string(t))) //log
 
 	level := dataorg.NodeGetLevel(ent.Block[:])
-	dataorg.NodeSetParent(secEnt.Block[:], level)
+	dataorg.NodeSetLevel(secEnt.Block[:], level)
 	t, _ = conv.Itob(level)
 	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(secEnt.BlkID, int16(dataorg.NodeOffLevel), string(t))) //log
 	return leftSplitPos, string(splitKey)

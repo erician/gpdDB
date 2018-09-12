@@ -22,10 +22,7 @@ type GpdDb struct {
 
 //NewDb create a new db
 func NewDb(dbName string) (db *GpdDb, err error) {
-	if _, err = os.Stat(dbName); err != nil {
-		return
-	}
-	if os.IsNotExist(err) == false {
+	if _, err = os.Stat(dbName); os.IsNotExist(err) == false {
 		return db, errors.NewErrDbAlreadyExist(dbName + " already exist, can't create it again")
 	}
 	db = new(GpdDb)
@@ -42,7 +39,7 @@ func OpenDb(dbName string) (db *GpdDb, err error) {
 		return db, errors.NewErrDbNotExist(dbName + " does not exist, please check the dbname")
 	}
 	db = new(GpdDb)
-	db.init(dbName)
+	err = db.init(dbName)
 	return
 }
 
@@ -64,6 +61,23 @@ func RemoveDb(dbName string) (err error) {
 	}
 	if os.IsNotExist(err) == false {
 		return os.Remove(dbName + relog.RecoveryLogDefaultSuffix)
+	}
+	return
+}
+
+//Close close db
+func (db *GpdDb) Close() (err error) {
+	if err = db.superNode.WriteBlk(db.dbFile); err != nil {
+		return errors.NewErrCloseFailed(err.Error())
+	}
+	if err = db.rootNode.WriteBlk(db.dbFile); err != nil {
+		return errors.NewErrCloseFailed(err.Error())
+	}
+	if err = db.reLog.Close(); err != nil {
+		return errors.NewErrCloseFailed(err.Error())
+	}
+	if err = db.cache.Close(db.dbFile); err != nil {
+		return errors.NewErrCloseFailed(err.Error())
 	}
 	return
 }

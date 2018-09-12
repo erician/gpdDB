@@ -1,6 +1,9 @@
 package relog
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/erician/gpdDB/common/gpdconst"
 	"github.com/erician/gpdDB/utils/byteutil"
 	"github.com/erician/gpdDB/utils/conv"
@@ -199,4 +202,10 @@ func (lr *LogRecordSetfield) SetChan(re chan struct{}) {
 //GetChan implement interface
 func (lr *LogRecordSetfield) GetChan() chan struct{} {
 	return lr.re
+}
+
+//DisplayLogRecordCheckpoint
+func DisplayLogRecordCheckpoint(file *os.File, lsnBs []byte, pos int64) int64 {
+	fmt.Println(string(lsnBs) + "\t" + gpdconst.OperationEnum[gpdconst.CHECKPOINT].Name)
+	return pos
 }

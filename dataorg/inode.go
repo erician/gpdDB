@@ -36,9 +36,7 @@ func INodeGetPairLen(key string, index string) int {
 	return len(key) + len(index) + int(NodeKeyLenSize) + int(NodeIndexLenSize)
 }
 
-
-
-//INodeFindSplitPos return the split pos 
+//INodeFindSplitPos return the split pos
 //like DNodeFindSplitPos
 func INodeFindSplitPos(node []byte) (splitPos int) {
 	splitPos = NodeNextField(node, int(NodeGetHeaderLen(node)))
@@ -51,5 +49,9 @@ func INodeFindSplitPos(node []byte) (splitPos int) {
 //INodeInsertPair insert a pair of key-index
 //need log
 func INodeInsertPair(node []byte, key string, index string, pos int) {
-	DNodeInsertPair(node, key, index, pos)
+	if int(NodeGetLen(node)) != pos {
+		DNodeRightShift(node, pos, INodeGetPairLen(key, index))
+	}
+	pos = NodeSetKeyOrValue(node, pos, []byte(key), 0, len(key))
+	NodeSetKeyOrValue(node, pos, []byte(index), 0, len(index))
 }

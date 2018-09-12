@@ -7,9 +7,11 @@ import (
 
 func TestNewRecoveryLog(t *testing.T) {
 	dbName := "aaa"
-	_, err := NewRecoveryLog(dbName)
-	defer os.Remove(dbName + RecoveryLogDefaultSuffix)
+	reLog, err := NewRecoveryLog(dbName)
 	if err != nil {
 		t.Error("expected ", nil, "not ", err)
 	}
+	reLog.Close()
+	os.Remove(dbName + RecoveryLogDefaultSuffix)
+
 }

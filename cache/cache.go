@@ -3,6 +3,8 @@ package cache
 import (
 	"os"
 
+	"github.com/erician/gpdDB/blkio"
+
 	"github.com/erician/gpdDB/dataorg"
 
 	"github.com/erician/gpdDB/common/gpdconst"
@@ -77,4 +79,19 @@ func getEntFromHashLinkList(cur *Ent, blkNum int64) *Ent {
 //ReleaseEnt release a ent
 func (cache *Cache) ReleaseEnt(ent *Ent) {
 	cache.freeEnts.PushRight(ent)
+}
+
+//Close sync ents with delay write and sync dbfiel
+func (cache *Cache) Close(file *os.File) (err error) {
+	for i := 0; i < int(cache.freeEnts.Size()); i++ {
+		if ent := cache.freeEnts.PopLeft(); (ent.GetStat() & EntStatDelaywrite) == EntStatDelaywrite {
+			if err = ent.WriteBlk(file); err != nil {
+				return
+			}
+		}
+	}
+	if err = blkio.SyncFile(file); err != nil {
+		return
+	}
+	return file.Close()
 }
