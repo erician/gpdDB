@@ -61,6 +61,7 @@ func (db *GpdDb) putPairInInternalRecursive(curNodeBlkID int64, key string, left
 	if curNodeBlkID == gpdconst.NotAllocatedBlockID {
 		rootEnt := db.getNewEnt()
 		db.insertPairInInternalRootFirstTime(rootEnt, key, leftIndex, rightIndex, level)
+		db.rootNode = rootEnt
 		dataorg.SuperNodeSetRootNodeID(db.superNode.Block[:], rootEnt.BlkID)
 		t, _ := conv.Itob(rootEnt.BlkID)
 		db.reLog.WriteLogRecord(relog.NewLogRecordSetField(db.superNode.BlkID, int16(dataorg.SuperNodeOffRootNodeID), string(t)))
@@ -103,7 +104,7 @@ func (db *GpdDb) insertPairInInternalRootFirstTime(rootEnt *cache.Ent, key strin
 	dataorg.NodeSetKeyOrValue(rootEnt.Block[:], curPos, []byte(rightIndex), 0, len(rightIndex))
 	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(db.superNode.BlkID, int16(curPos), string(rightIndex)))
 
-	len := int16(len(leftIndex)) + int16(dataorg.NodeIndexLenSize) + int16(dataorg.INodeGetPairLen(key, rightIndex))
+	len := dataorg.NodeGetHeaderLen(rootEnt.Block[:]) + int16(len(leftIndex)) + int16(dataorg.NodeIndexLenSize) + int16(dataorg.INodeGetPairLen(key, rightIndex))
 	dataorg.NodeSetLen(rootEnt.Block[:], len)
 	t, _ := conv.Itob(len)
 	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(rootEnt.BlkID, int16(dataorg.NodeOffLen), string(t)))
@@ -158,12 +159,9 @@ func (db *GpdDb) splitLeaf(ent *cache.Ent, secEnt *cache.Ent) int {
 
 		curPos = int16(dataorg.NodeNextKey(ent.Block[:], int(curPos)))
 	}
-	dataorg.NodeSetLen(ent.Block[:], int16(splitPos))
-	t, _ := conv.Itob(int16(splitPos))
-	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(ent.BlkID, int16(dataorg.NodeOffLen), string(t))) //log
 
 	dataorg.NodeSetNext(ent.Block[:], secEnt.BlkID)
-	t, _ = conv.Itob(secEnt.BlkID)
+	t, _ := conv.Itob(secEnt.BlkID)
 	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(ent.BlkID, int16(dataorg.NodeOffNext), string(t))) //log
 
 	secEntLen := dataorg.NodeGetHeaderLen(secEnt.Block[:]) + dataorg.NodeGetLen(ent.Block[:]) - int16(splitPos)
@@ -175,6 +173,10 @@ func (db *GpdDb) splitLeaf(ent *cache.Ent, secEnt *cache.Ent) int {
 	dataorg.NodeSetParent(secEnt.Block[:], parent)
 	t, _ = conv.Itob(parent)
 	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(secEnt.BlkID, int16(dataorg.NodeOffParent), string(t))) //log
+
+	dataorg.NodeSetLen(ent.Block[:], int16(splitPos))
+	t, _ = conv.Itob(int16(splitPos))
+	db.reLog.WriteLogRecord(relog.NewLogRecordSetField(ent.BlkID, int16(dataorg.NodeOffLen), string(t))) //log
 
 	return splitPos
 }

@@ -83,7 +83,8 @@ func (cache *Cache) ReleaseEnt(ent *Ent) {
 
 //Close sync ents with delay write and sync dbfiel
 func (cache *Cache) Close(file *os.File) (err error) {
-	for i := 0; i < int(cache.freeEnts.Size()); i++ {
+	freeEntsSize := int(cache.freeEnts.Size())
+	for i := 0; i < freeEntsSize; i++ {
 		if ent := cache.freeEnts.PopLeft(); (ent.GetStat() & EntStatDelaywrite) == EntStatDelaywrite {
 			if err = ent.WriteBlk(file); err != nil {
 				return

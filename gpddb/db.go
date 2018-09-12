@@ -73,10 +73,10 @@ func (db *GpdDb) Close() (err error) {
 	if err = db.rootNode.WriteBlk(db.dbFile); err != nil {
 		return errors.NewErrCloseFailed(err.Error())
 	}
-	if err = db.reLog.Close(); err != nil {
+	if err = db.cache.Close(db.dbFile); err != nil {
 		return errors.NewErrCloseFailed(err.Error())
 	}
-	if err = db.cache.Close(db.dbFile); err != nil {
+	if err = db.reLog.Close(); err != nil {
 		return errors.NewErrCloseFailed(err.Error())
 	}
 	return

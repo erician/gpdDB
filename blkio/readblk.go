@@ -8,6 +8,9 @@ import (
 
 //ReadBlk write a block
 func ReadBlk(file *os.File, block []byte, blkNum int64) (err error) {
-	_, err = file.ReadAt(block, blkNum*gpdconst.BlockSize)
+	n, err := file.ReadAt(block, blkNum*gpdconst.BlockSize)
+	if n != len(block) {
+		return err
+	}
 	return
 }
