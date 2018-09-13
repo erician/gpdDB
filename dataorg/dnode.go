@@ -15,11 +15,11 @@ func DNodeGetPairLen(key string, value string) int {
 
 //DNodeFindInsertPos find the pos where the key shoud insert
 func DNodeFindInsertPos(node []byte, key string) (pos int, doesAlreadyExist bool) {
-	insertKey := []byte(key)  
+	insertKey := []byte(key)
 	nodeLen := NodeGetLen(node)
 	pos = int(NodeConstValueHeaderLen)
 	for pos < int(nodeLen) {
-		desKey := NodeGetKeyOrValue(node, pos) 
+		desKey := NodeGetKeyOrValue(node, pos)
 		result := byteutil.ByteCmp(insertKey, desKey)
 		if result <= 0 {
 			if result == 0 {
@@ -73,6 +73,6 @@ func DNodeFindSplitPos(srcNode []byte) (splitPos int) {
 func DNodeDeletePair(node []byte, key string, pos int) string {
 	nextKeyPos := NodeNextKey(node, pos)
 	DNodeLeftShift(node, nextKeyPos, nextKeyPos-pos)
-	NodeSetLen(node, int16(nextKeyPos-pos))
+	NodeSetLen(node, NodeGetLen(node)+int16(nextKeyPos-pos))
 	return string(NodeGetKeyOrValue(node, NodeNextField(node, pos))[:])
 }

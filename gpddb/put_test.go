@@ -7,7 +7,12 @@ import (
 
 func TestPutWithSimple(t *testing.T) {
 	dbName := "aaa"
-	db, _ := NewDb(dbName)
+
+	db, err := NewDb(dbName)
+	if err != nil {
+		RemoveDb(dbName)
+		db, _ = NewDb(dbName)
+	}
 
 	key := "aaa"
 	value := "bbb"
@@ -81,6 +86,7 @@ func TestPutWith300KeysToSplitLeaf(t *testing.T) {
 
 func TestPutWith50000KeysToSplitIndex(t *testing.T) {
 	dbName := "aaa"
+
 	db, err := NewDb(dbName)
 	if err != nil {
 		RemoveDb(dbName)
@@ -95,6 +101,35 @@ func TestPutWith50000KeysToSplitIndex(t *testing.T) {
 			t.Error("expect: ", nil, "not: ", err)
 		}
 	}
+	db.Close()
+	RemoveDb(dbName)
+}
+
+func TestPutWithSameKeys(t *testing.T) {
+	dbName := "aaa"
+
+	db, err := NewDb(dbName)
+	if err != nil {
+		RemoveDb(dbName)
+		db, _ = NewDb(dbName)
+	}
+
+	key := "aaa"
+	value := "bbb"
+	if err := db.Put(key, value); err != nil {
+		t.Error("expect: ", nil, "not: ", err)
+	}
+	if err := db.Put(key, value); err != nil {
+		t.Error("expect: ", nil, "not: ", err)
+	}
+	tValue, err := db.Get(key)
+	if err != nil {
+		t.Error("expect: ", key+"'value", "not: ", err)
+	}
+	if tValue != value {
+		t.Error("expect: ", value, "not: ", tValue)
+	}
+
 	db.Close()
 	RemoveDb(dbName)
 }
