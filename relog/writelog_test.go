@@ -7,18 +7,7 @@ import (
 	"github.com/erician/gpdDB/common/gpdconst"
 )
 
-func TestNewRecoveryLog(t *testing.T) {
-	dbName := "aaa"
-	reLog, err := NewRecoveryLog(dbName)
-	if err != nil {
-		t.Error("expected ", nil, "not ", err)
-	}
-	reLog.Close()
-	os.Remove(dbName + RecoveryLogDefaultSuffix)
-}
-
-func TestDisplay(t *testing.T) {
-
+func TestWriteLogRecord(t *testing.T) {
 	dbName := "aaa"
 	key := "bbb"
 	value := "ccc"
@@ -29,9 +18,15 @@ func TestDisplay(t *testing.T) {
 	reLog.WriteLogRecord(NewLogRecordAllocate(3))
 	reLog.WriteLogRecord(NewLogRecordSetField(4, 40, value))
 
-	reLog.Display()
+	filedPos := 16 + 9 + 9 + 27 + 27 + 17 + 21
+	tFiledValue := make([]byte, len(value))
+	if _, err := reLog.logFile.ReadAt(tFiledValue, int64(filedPos)); err != nil {
+		t.Error("expected: ", nil, "not: ", err)
+	}
+	if string(tFiledValue) != value {
+		t.Error("expected: ", value, "not: ", tFiledValue)
+	}
 	reLog.Close()
 
 	os.Remove(dbName + RecoveryLogDefaultSuffix)
-
 }

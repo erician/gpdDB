@@ -123,3 +123,20 @@ func LogGetVersion(logFile *os.File) (pos int8, err error) {
 	}
 	return int8(data), err
 }
+
+//DisplayLogHeader as name
+func DisplayLogHeader(file *os.File) {
+	currentCheckPonitPosBs := make([]byte, 8)
+	file.ReadAt(currentCheckPonitPosBs, LogOffCurrentCheckpointPos)
+	currentCheckPonitPos, _ := conv.Btoi(currentCheckPonitPosBs)
+
+	headerLenBs := make([]byte, 2)
+	file.ReadAt(headerLenBs, LogOffHeaderLen)
+	headerLen, _ := conv.Btoi(headerLenBs)
+
+	versionBs := make([]byte, 1)
+	file.ReadAt(versionBs, LogOffVersion)
+	version, _ := conv.Btoi(versionBs)
+
+	fmt.Println(currentCheckPonitPos, "\t", headerLen, "\t", version, "\t")
+}

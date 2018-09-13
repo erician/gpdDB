@@ -87,8 +87,8 @@ func (lr *LogRecordUserOp) GetChan() chan struct{} {
 	return lr.re
 }
 
-//NewLogRecordGPD create a log record of ALLOCATE
-func NewLogRecordGPD(op int8, blkNum int64, key string, value string) (lr *LogRecordUserOp) {
+//NewLogRecordUserOp create a log record of use operation
+func NewLogRecordUserOp(op int8, blkNum int64, key string, value string) (lr *LogRecordUserOp) {
 	lr = new(LogRecordUserOp)
 	lr.Operation = op
 	lr.BlkNum = blkNum
@@ -99,17 +99,17 @@ func NewLogRecordGPD(op int8, blkNum int64, key string, value string) (lr *LogRe
 
 //NewLogRecordUserOpGet won't be used
 func NewLogRecordUserOpGet(blkNum int64, key string, value string) (lr *LogRecordUserOp) {
-	return NewLogRecordGPD(gpdconst.GET, blkNum, key, value)
+	return NewLogRecordUserOp(gpdconst.GET, blkNum, key, value)
 }
 
 //NewLogRecordUserOpPut create a log record of put
 func NewLogRecordUserOpPut(blkNum int64, key string, value string) (lr *LogRecordUserOp) {
-	return NewLogRecordGPD(gpdconst.PUT, blkNum, key, value)
+	return NewLogRecordUserOp(gpdconst.PUT, blkNum, key, value)
 }
 
 //NewLogRecordUserOpDelete create a log record of delete
 func NewLogRecordUserOpDelete(blkNum int64, key string, value string) (lr *LogRecordUserOp) {
-	return NewLogRecordGPD(gpdconst.DELETE, blkNum, key, value)
+	return NewLogRecordUserOp(gpdconst.DELETE, blkNum, key, value)
 }
 
 //NewLogRecordCheckpoint create a log record of checkpoint
@@ -204,8 +204,94 @@ func (lr *LogRecordSetfield) GetChan() chan struct{} {
 	return lr.re
 }
 
-//DisplayLogRecordCheckpoint
-func DisplayLogRecordCheckpoint(file *os.File, lsnBs []byte, pos int64) int64 {
-	fmt.Println(string(lsnBs) + "\t" + gpdconst.OperationEnum[gpdconst.CHECKPOINT].Name)
+//Display log for reading
+//NOTE: this is not a critical feature, just for debug, so will not return err
+
+//DisplayLogRecordCheckpoint as name
+func DisplayLogRecordCheckpoint(file *os.File, pos int64, lsnBs []byte) int64 {
+	lsn, _ := conv.Btoi(lsnBs)
+	fmt.Println(lsn, "\t"+gpdconst.OperationEnum[gpdconst.CHECKPOINT].Name)
+	return pos
+}
+
+//
+func DisplayLogRecordUserOp(file *os.File, pos int64, lsnBs []byte, op int8) int64 {
+	lsn, _ := conv.Btoi(lsnBs)
+
+	blkNumBs := make([]byte, 8)
+	n, _ := file.ReadAt(blkNumBs, pos)
+	blkNum, _ := conv.Btoi(blkNumBs)
+	pos = pos + int64(n)
+
+	keyOrValueLenBs := make([]byte, 2)
+	n, _ = file.ReadAt(keyOrValueLenBs, pos)
+	keyOrValueLen, _ := conv.Btoi(keyOrValueLenBs)
+	pos = pos + int64(n)
+
+	key := make([]byte, keyOrValueLen)
+	n, _ = file.ReadAt(key, pos)
+	pos = pos + int64(n)
+
+	n, _ = file.ReadAt(keyOrValueLenBs, pos)
+	keyOrValueLen, _ = conv.Btoi(keyOrValueLenBs)
+	pos = pos + int64(n)
+
+	value := make([]byte, keyOrValueLen)
+	n, _ = file.ReadAt(value, pos)
+	pos = pos + int64(n)
+
+	fmt.Println(lsn, "\t"+gpdconst.OperationEnum[op].Name+"\t",
+		blkNum, "\t"+string(key), "\t"+string(value))
+	return pos
+}
+
+//DisplayLogRecordPut as name
+func DisplayLogRecordPut(file *os.File, pos int64, lsnBs []byte) int64 {
+	return DisplayLogRecordUserOp(file, pos, lsnBs, gpdconst.PUT)
+}
+
+//DisplayLogRecordDelete as name
+func DisplayLogRecordDelete(file *os.File, pos int64, lsnBs []byte) int64 {
+	return DisplayLogRecordUserOp(file, pos, lsnBs, gpdconst.DELETE)
+}
+
+//DisplayLogRecordAllocate as name
+func DisplayLogRecordAllocate(file *os.File, pos int64, lsnBs []byte) int64 {
+	lsn, _ := conv.Btoi(lsnBs)
+
+	blkNumBs := make([]byte, 8)
+	n, _ := file.ReadAt(blkNumBs, pos)
+	blkNum, _ := conv.Btoi(blkNumBs)
+	pos = pos + int64(n)
+
+	fmt.Println(lsn, "\t"+gpdconst.OperationEnum[gpdconst.ALLOCATE].Name+"\t", blkNum)
+	return pos
+}
+
+//DisplayLogRecordSetField as name
+func DisplayLogRecordSetField(file *os.File, pos int64, lsnBs []byte) int64 {
+	lsn, _ := conv.Btoi(lsnBs)
+
+	blkNumBs := make([]byte, 8)
+	n, _ := file.ReadAt(blkNumBs, pos)
+	blkNum, _ := conv.Btoi(blkNumBs)
+	pos = pos + int64(n)
+
+	fieldPosBs := make([]byte, 2)
+	n, _ = file.ReadAt(fieldPosBs, pos)
+	filedPos, _ := conv.Btoi(fieldPosBs)
+	pos = pos + int64(n)
+
+	fieldValueLenBs := make([]byte, 2)
+	n, _ = file.ReadAt(fieldValueLenBs, pos)
+	fieldValueLen, _ := conv.Btoi(fieldValueLenBs)
+	pos = pos + int64(n)
+
+	fieldValue := make([]byte, fieldValueLen)
+	n, _ = file.ReadAt(fieldValue, pos)
+	pos = pos + int64(n)
+
+	fmt.Println(lsn, "\t"+gpdconst.OperationEnum[gpdconst.SETFIELD].Name+"\t",
+		blkNum, "\t", filedPos, "\t"+string(fieldValue))
 	return pos
 }

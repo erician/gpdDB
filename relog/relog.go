@@ -90,14 +90,26 @@ func (reLog *RecoveryLog) Close() (err error) {
 
 //Display display the log for reading easily
 func (reLog *RecoveryLog) Display() {
-	curPos := int64(0)
+	DisplayLogHeader(reLog.logFile)
+	headerLen, _ := LogGetHeaderLen(reLog.logFile)
+	curPos := int64(headerLen)
 	lsnAndOpBs := make([]byte, 9)
 	for {
-		if _, err := reLog.logFile.ReadAt(lsnAndOpBs, curPos); err != nil {
+		if n, err := reLog.logFile.ReadAt(lsnAndOpBs, curPos); err == nil {
 			switch op, _ := conv.Btoi(lsnAndOpBs[8:9]); int8(op) {
 			case gpdconst.CHECKPOINT:
-				curPos = DisplayLogRecordCheckpoint(reLog.logFile, lsnAndOpBs[0:8], curPos)
+				curPos = DisplayLogRecordCheckpoint(reLog.logFile, curPos+int64(n), lsnAndOpBs[0:8])
+			case gpdconst.PUT:
+				curPos = DisplayLogRecordPut(reLog.logFile, curPos+int64(n), lsnAndOpBs[0:8])
+			case gpdconst.DELETE:
+				curPos = DisplayLogRecordDelete(reLog.logFile, curPos+int64(n), lsnAndOpBs[0:8])
+			case gpdconst.ALLOCATE:
+				curPos = DisplayLogRecordAllocate(reLog.logFile, curPos+int64(n), lsnAndOpBs[0:8])
+			case gpdconst.SETFIELD:
+				curPos = DisplayLogRecordSetField(reLog.logFile, curPos+int64(n), lsnAndOpBs[0:8])
 			}
+		} else {
+			break
 		}
 	}
 }

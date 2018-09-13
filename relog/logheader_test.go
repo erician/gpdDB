@@ -54,3 +54,11 @@ func TestLogGetField(t *testing.T) {
 		t.Error("expected: ", data, "not: ", gotData)
 	}
 }
+
+func TestDisplayLogHeader(t *testing.T) {
+	dbName := "aaa"
+	reLog, _ := NewRecoveryLog(dbName)
+	DisplayLogHeader(reLog.logFile)
+	reLog.Close()
+	os.Remove(dbName + RecoveryLogDefaultSuffix)
+}
