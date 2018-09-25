@@ -48,7 +48,7 @@ func TestPutWith300KeysToSplitLeaf(t *testing.T) {
 		db, _ = NewDb(dbName)
 	}
 
-	keysNum := 300
+	keysNum := 2000
 	key := "aaa"
 	value := "bbb"
 	for i := 0; i < keysNum; i++ {
@@ -93,9 +93,10 @@ func TestPutWith50000KeysToSplitIndex(t *testing.T) {
 		db, _ = NewDb(dbName)
 	}
 
-	keysNum := 50000
+	keysNum := 400000
 	key := "aaa"
 	value := "bbb"
+
 	for i := 0; i < keysNum; i++ {
 		if err := db.Put(key+strconv.Itoa(i), value+strconv.Itoa(i)); err != nil {
 			t.Error("expect: ", nil, "not: ", err)
