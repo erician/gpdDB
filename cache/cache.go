@@ -33,13 +33,15 @@ func (cache *Cache) GetEnt(file *os.File, blkNum int64, doesReadFromFile bool) (
 	if ent != nil {
 		cache.freeEnts.RemoveWithBlkNum(blkNum)
 	} else {
+		ent = getEntFromFreeEnts(cache.freeEnts, )
 		ent = cache.freeEnts.PopLeft()
-		ent.BlkID = blkNum
+		removeEntFromHashLinkList(cache.ents[ent.], )
 		if ent.GetStat()&EntStatDelaywrite == EntStatDelaywrite {
 			if err = ent.WriteBlk(file); err != nil { //can be optimizated with go routine
 				return
 			}
 		}
+		ent.BlkID = blkNum
 		if doesReadFromFile == true {
 			if err = ent.ReadBlk(file, blkNum); err != nil {
 				cache.freeEnts.PushLeft(ent)
@@ -58,10 +60,11 @@ func putEntInHashLinkList(ents *[gpdconst.CacheEntDefaultNum]*Ent, ent *Ent, blk
 	ent.BlkID = blkNum
 	ent.Next = nil
 	ent.Prev = nil
-	ents[blkNum%gpdconst.CacheEntDefaultNum] = ent
 	if ents[blkNum%gpdconst.CacheEntDefaultNum] != nil {
 		ent.Next = ents[blkNum%gpdconst.CacheEntDefaultNum]
 		ents[blkNum%gpdconst.CacheEntDefaultNum].Prev = ent
+		ents[blkNum%gpdconst.CacheEntDefaultNum] = ent
+	} else {
 		ents[blkNum%gpdconst.CacheEntDefaultNum] = ent
 	}
 }

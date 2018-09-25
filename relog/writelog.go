@@ -2,7 +2,6 @@ package relog
 
 import (
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -13,7 +12,7 @@ func (reLog *RecoveryLog) WriteLogRecord(lr LogRecord) {
 	<-lr.GetChan()
 }
 
-//WriteLog this is a loop
+//WriteLogRoutine this is a loop
 func (reLog *RecoveryLog) WriteLogRoutine() {
 	var res []chan struct{}
 	for {
@@ -31,10 +30,12 @@ func (reLog *RecoveryLog) WriteLogRoutine() {
 				res = append(res, lr.GetChan())
 			}
 		}
-		if err := reLog.syncLog(); err != nil {
-			//shutdown this system
-			log.Fatal("write log ", err)
-		}
+		/*
+			if err := reLog.syncLog(); err != nil {
+				//shutdown this system
+				log.Fatal("write log ", err)
+			}
+		*/
 		for _, re := range res {
 			re <- struct{}{}
 		}
