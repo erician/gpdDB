@@ -1,0 +1,32 @@
+# Different level transaction
+Now, we use three level transactions. The top level is User Transaction; the second is Operation transaction; the third is System Transaction.
+All level transactions comply with "ALL or NOTHING".
+
+## User Transaction
+User Transaction is composed of user operations(such as Get, Put, Delete), for example:
+StartTrans
+Get()
+Put()
+Delete()
+......
+CommitTrans
+All operations in a transaction will be All Done or nothing.
+
+NOTE: in first version we won't impl this, which means every user operaion is an transaction. If the return value of an operation is OK, the 
+result of the operation must be persisted in DB.
+
+## Operation Transaction
+Every user operation is traced by an Operation transaction. So the user transaction can be composed of operation transactons corresponding 
+to each user operation. 
+
+NOTE:  in first version we would impl this
+
+## System Transaction
+For a user operation, it always can not be implemented just by modifying one place. Taking the Put as an example, when put a pair(key-value) 
+in DB,  sometimes we not only put the data in the right node, but need to allocate a new node when the corresponding node is full. So we can treate
+that as two System Transactions: one is inserting pair into a node; another is allocating a new node. In addition, we find some system transactions are
+independent, which means there transactions do not depend the specific user operatins and do not need reverst, such as allocating a new node when put. 
+
+NOTE:  in first version we won't impl this
+
+ 
