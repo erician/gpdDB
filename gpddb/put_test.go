@@ -48,7 +48,7 @@ func TestPutWith300KeysToSplitLeaf(t *testing.T) {
 		db, _ = NewDb(dbName)
 	}
 
-	keysNum := 2000
+	keysNum := 400
 	key := "aaa"
 	value := "bbb"
 	for i := 0; i < keysNum; i++ {
