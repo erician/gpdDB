@@ -20,6 +20,11 @@ type Cache struct {
 func NewCache() (cache *Cache) {
 	cache = new(Cache)
 	cache.ents = new([gpdconst.CacheEntDefaultNum]*Ent)
+	for i := 0; i < int(gpdconst.CacheEntDefaultNum); i++ {
+		cache.ents[i] = NewEnt()
+		cache.ents[i].Next = cache.ents[i]
+		cache.ents[i].Prev = cache.ents[i]
+	}
 	cache.freeEnts = NewFreeEnts()
 	for i := 0; i < int(gpdconst.CacheEntDefaultNum); i++ {
 		cache.freeEnts.PushRight(NewEnt())
@@ -34,7 +39,7 @@ func (cache *Cache) GetEnt(file *os.File, blkNum int64, doesReadFromFile bool) (
 		cache.freeEnts.RemoveWithBlkNum(blkNum)
 	} else {
 		ent = cache.freeEnts.PopLeft()
-		removeEntFromHashLinkList(cache.ents, blkNum)
+		removeEntFromHashLinkList(cache.ents[ent.BlkID%gpdconst.CacheEntDefaultNum], ent.BlkID)
 		if ent.GetStat()&EntStatDelaywrite == EntStatDelaywrite {
 			if err = ent.WriteBlk(file); err != nil { //can be optimizated with go routine
 				return
@@ -50,55 +55,39 @@ func (cache *Cache) GetEnt(file *os.File, blkNum int64, doesReadFromFile bool) (
 			dataorg.NodeInit(ent.Block[:])
 			dataorg.NodeSetBlkID(ent.Block[:], blkNum)
 		}
-		putEntInHashLinkList(cache.ents, ent, blkNum)
+		putEntInHashLinkList(cache.ents[blkNum%gpdconst.CacheEntDefaultNum], ent)
 	}
 	return
 }
 
-func putEntInHashLinkList(ents *[gpdconst.CacheEntDefaultNum]*Ent, ent *Ent, blkNum int64) {
-	ent.BlkID = blkNum
-	ent.Next = nil
-	ent.Prev = nil
-	if ents[blkNum%gpdconst.CacheEntDefaultNum] != nil {
-		ent.Next = ents[blkNum%gpdconst.CacheEntDefaultNum]
-		ents[blkNum%gpdconst.CacheEntDefaultNum].Prev = ent
-		ents[blkNum%gpdconst.CacheEntDefaultNum] = ent
-	} else {
-		ents[blkNum%gpdconst.CacheEntDefaultNum] = ent
-	}
+func putEntInHashLinkList(sen *Ent, ent *Ent) {
+	sen.Next.Prev = ent
+	ent.Next = sen.Next
+	ent.Prev = sen
+	sen.Next = ent
 }
 
-func getEntFromHashLinkList(cur *Ent, blkNum int64) *Ent {
-	if cur == nil {
-		return nil
-	}
-	for cur != nil && cur.BlkID != blkNum {
+func getEntFromHashLinkList(sen *Ent, blkNum int64) *Ent {
+	cur := sen.Next
+	for cur != sen && cur.BlkID != blkNum {
 		cur = cur.Next
+	}
+	if cur == sen {
+		return nil
 	}
 	return cur
 }
 
 //if the ent of blkNum exists, remove it, or do nothing
-func removeEntFromHashLinkList(ents *[gpdconst.CacheEntDefaultNum]*Ent, blkNum int64) {
-	cur := ents[blkNum%gpdconst.CacheEntDefaultNum]
-	prev := cur
-	for cur != nil && cur.BlkID != blkNum {
-		prev = cur
+func removeEntFromHashLinkList(sen *Ent, blkNum int64) {
+	cur := sen.Next
+	for cur != sen && cur.BlkID != blkNum {
 		cur = cur.Next
 	}
-	if cur == nil {
-		return
+	if cur != sen {
+		cur.Prev.Next = cur.Next
+		cur.Next.Prev = cur.Prev
 	}
-	if cur == prev {
-		ents[blkNum%gpdconst.CacheEntDefaultNum] = cur.Next
-	} else {
-		prev.Next = cur.Next
-		if cur.Next != nil {
-			cur.Next.Prev = prev
-		}
-	}
-	cur.Next = nil
-	cur.Prev = nil
 }
 
 //ReleaseEnt release a ent

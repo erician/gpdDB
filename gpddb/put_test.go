@@ -57,14 +57,12 @@ func TestPutWith300KeysToSplitLeaf(t *testing.T) {
 		}
 	}
 	for i := 0; i < keysNum; i++ {
-		tValue, err := db.Get(key + strconv.Itoa(i))
-		if err != nil {
-			t.Error("expect: ", key+strconv.Itoa(i)+"'value", "not: ", err)
-		}
+		tValue, _ := db.Get(key + strconv.Itoa(i))
 		if tValue != value+strconv.Itoa(i) {
 			t.Error("expect: ", value+strconv.Itoa(i), "not: ", tValue)
 		}
 	}
+
 	db.Close()
 
 	db, err = OpenDb(dbName)
@@ -93,7 +91,7 @@ func TestPutWith50000KeysToSplitIndex(t *testing.T) {
 		db, _ = NewDb(dbName)
 	}
 
-	keysNum := 400000
+	keysNum := 30000
 	key := "aaa"
 	value := "bbb"
 

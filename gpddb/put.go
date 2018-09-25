@@ -87,7 +87,9 @@ func (db *GpdDb) putPairInInternalRecursive(curNodeBlkID int64, key string, left
 			db.insertPairInInternal(ent, key, rightIndex, insertPos)
 		}
 		ent.SetStat(ent.GetStat() | cache.EntStatDelaywrite)
-		db.cache.ReleaseEnt(ent)
+		if ent != db.rootNode {
+			db.cache.ReleaseEnt(ent)
+		}
 	}
 }
 

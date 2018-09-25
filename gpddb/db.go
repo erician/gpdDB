@@ -3,9 +3,8 @@ package gpddb
 import (
 	"os"
 
-	"github.com/erician/gpdDB/common/gpdconst"
-
 	"github.com/erician/gpdDB/cache"
+	"github.com/erician/gpdDB/common/gpdconst"
 	"github.com/erician/gpdDB/dataorg"
 	"github.com/erician/gpdDB/errors"
 	"github.com/erician/gpdDB/relog"
