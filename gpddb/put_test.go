@@ -1,6 +1,7 @@
 package gpddb
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
 )
@@ -45,7 +46,9 @@ func TestPutWith300KeysToSplitLeaf(t *testing.T) {
 	db, err := NewDb(dbName)
 	if err != nil {
 		RemoveDb(dbName)
-		db, _ = NewDb(dbName)
+		if db, err = NewDb(dbName); err != nil {
+			t.Error(err)
+		}
 	}
 
 	keysNum := 400
@@ -83,7 +86,7 @@ func TestPutWith300KeysToSplitLeaf(t *testing.T) {
 }
 
 func TestPutWith50000KeysToSplitIndex(t *testing.T) {
-	dbName := "aaa"
+	dbName := "aaa "
 
 	db, err := NewDb(dbName)
 	if err != nil {
@@ -91,11 +94,14 @@ func TestPutWith50000KeysToSplitIndex(t *testing.T) {
 		db, _ = NewDb(dbName)
 	}
 
-	keysNum := 30000
+	keysNum := 1000000
 	key := "aaa"
 	value := "bbb"
 
 	for i := 0; i < keysNum; i++ {
+		if i == 22916 {
+			fmt.Println(i)
+		}
 		if err := db.Put(key+strconv.Itoa(i), value+strconv.Itoa(i)); err != nil {
 			t.Error("expect: ", nil, "not: ", err)
 		}

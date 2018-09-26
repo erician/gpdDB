@@ -27,7 +27,9 @@ func NewCache() (cache *Cache) {
 	}
 	cache.freeEnts = NewFreeEnts()
 	for i := 0; i < int(gpdconst.CacheEntDefaultNum); i++ {
-		cache.freeEnts.PushRight(NewEnt())
+		newEnt := NewEnt()
+		newEnt.SetStat(newEnt.GetStat() | EntStatInFreeEnts)
+		cache.freeEnts.PushRight(newEnt)
 	}
 	return
 }
@@ -57,6 +59,7 @@ func (cache *Cache) GetEnt(file *os.File, blkNum int64, doesReadFromFile bool) (
 		}
 		putEntInHashLinkList(cache.ents[blkNum%gpdconst.CacheEntDefaultNum], ent)
 	}
+	ent.SetStat(ent.GetStat() & (^EntStatInFreeEnts))
 	return
 }
 
@@ -90,9 +93,12 @@ func removeEntFromHashLinkList(sen *Ent, blkNum int64) {
 	}
 }
 
-//ReleaseEnt release a ent
+//ReleaseEnt release a ent, support multiple times release
 func (cache *Cache) ReleaseEnt(ent *Ent) {
-	cache.freeEnts.PushRight(ent)
+	if (ent.GetStat() & EntStatInFreeEnts) != EntStatInFreeEnts {
+		cache.freeEnts.PushRight(ent)
+		ent.SetStat(ent.GetStat() | EntStatInFreeEnts)
+	}
 }
 
 //Close sync ents with delay write and sync dbfiel

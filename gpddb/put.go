@@ -12,12 +12,10 @@ import (
 
 //Put put a pair of key-value
 func (db *GpdDb) Put(key string, value string) (err error) {
-	curNode := db.rootNode
+	curNode, _ := db.getRootNode()
 	for dataorg.NodeIsLeaf(curNode.Block[:]) == false {
 		index := dataorg.INodeFindIndex(curNode.Block[:], key)
-		if curNode != db.rootNode {
-			db.cache.ReleaseEnt(curNode)
-		}
+		db.cache.ReleaseEnt(curNode)
 		if curNode, err = db.cache.GetEnt(db.dbFile, index, true); err != nil {
 			return errors.NewErrPutFailed(err.Error())
 		}
@@ -27,10 +25,8 @@ func (db *GpdDb) Put(key string, value string) (err error) {
 		leftIndex, _ := conv.Itob(curNode.BlkID)
 		db.putPairInInternalRecursive(dataorg.NodeGetParent(curNode.Block[:]), splitKey, string(leftIndex), string(rightIndex), dataorg.NodeConstValueLeafLevel)
 	}
-	if curNode != db.rootNode {
-		curNode.SetStat(curNode.GetStat() | cache.EntStatDelaywrite)
-		db.cache.ReleaseEnt(curNode)
-	}
+	curNode.SetStat(curNode.GetStat() | cache.EntStatDelaywrite)
+	db.cache.ReleaseEnt(curNode)
 	return
 }
 
@@ -61,8 +57,9 @@ func (db *GpdDb) putPairInInternalRecursive(curNodeBlkID int64, key string, left
 	if curNodeBlkID == gpdconst.NotAllocatedBlockID {
 		rootEnt := db.getNewEnt()
 		db.insertPairInInternalRootFirstTime(rootEnt, key, leftIndex, rightIndex, level)
-		db.rootNode = rootEnt
+		rootEnt.SetStat(rootEnt.GetStat() | cache.EntStatDelaywrite)
 		dataorg.SuperNodeSetRootNodeID(db.superNode.Block[:], rootEnt.BlkID)
+		db.cache.ReleaseEnt(rootEnt)
 		t, _ := conv.Itob(rootEnt.BlkID)
 		db.reLog.WriteLogRecord(relog.NewLogRecordSetField(db.superNode.BlkID, int16(dataorg.SuperNodeOffRootNodeID), string(t)))
 	} else {
@@ -79,6 +76,7 @@ func (db *GpdDb) putPairInInternalRecursive(curNodeBlkID int64, key string, left
 			}
 			rightIndex, _ := conv.Itob(secEnt.BlkID)
 			leftIndex, _ := conv.Itob(ent.BlkID)
+
 			secEnt.SetStat(secEnt.GetStat() | cache.EntStatDelaywrite)
 			db.cache.ReleaseEnt(secEnt)
 			db.putPairInInternalRecursive(dataorg.NodeGetParent(ent.Block[:]), splitKey, string(leftIndex), string(rightIndex), level+1)
@@ -87,9 +85,7 @@ func (db *GpdDb) putPairInInternalRecursive(curNodeBlkID int64, key string, left
 			db.insertPairInInternal(ent, key, rightIndex, insertPos)
 		}
 		ent.SetStat(ent.GetStat() | cache.EntStatDelaywrite)
-		if ent != db.rootNode {
-			db.cache.ReleaseEnt(ent)
-		}
+		db.cache.ReleaseEnt(ent)
 	}
 }
 

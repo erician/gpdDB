@@ -94,5 +94,6 @@ func (freeEnts *FreeEnts) RemoveWithBlkNum(blkNum int64) {
 	if cur != freeEnts.sen {
 		cur.FreePrev.FreeNext = cur.FreeNext
 		cur.FreeNext.FreePrev = cur.FreePrev
+		freeEnts.size--
 	}
 }

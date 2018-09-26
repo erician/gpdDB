@@ -9,20 +9,16 @@ import (
 
 //Get get a value from db, wth the key
 func (db *GpdDb) Get(key string) (value string, err error) {
-	curNode := db.rootNode
+	curNode, _ := db.getRootNode()
 	for dataorg.NodeIsLeaf(curNode.Block[:]) == false {
 		index := dataorg.INodeFindIndex(curNode.Block[:], key)
-		if curNode != db.rootNode {
-			db.cache.ReleaseEnt(curNode)
-		}
+		db.cache.ReleaseEnt(curNode)
 		if curNode, err = db.cache.GetEnt(db.dbFile, index, true); err != nil {
 			return value, errors.NewErrGetFailed(err.Error())
 		}
 	}
 	value, err = getValueFromLeaf(curNode, key)
-	if curNode != db.rootNode {
-		db.cache.ReleaseEnt(curNode)
-	}
+	db.cache.ReleaseEnt(curNode)
 	return
 }
 

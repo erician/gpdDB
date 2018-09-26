@@ -43,8 +43,8 @@ func TestBtoiUsingItob(t *testing.T) {
 	s64Bs := []byte{0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11}
 
 	i, _ := Btoi(u8Bs)
-	if a, _ := Itob(i); byteutil.ByteCmp(a, u8Bs) != 0 {
-		t.Errorf("expect: %x not: %x", u8Bs, a)
+	if a, _ := Itob(int8(i)); byteutil.ByteCmp(a, u8Bs) != 0 {
+		t.Error("expect: ", u8Bs, "not: ", a)
 	}
 	i, _ = Btoi(s64Bs)
 	a, _ := Itob(i)

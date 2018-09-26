@@ -1,23 +1,32 @@
 package main
 
 import (
-	"os"
+	"fmt"
+	"strconv"
 
-	"github.com/erician/gpdDB/common/gpdconst"
-	"github.com/erician/gpdDB/relog"
+	"github.com/erician/gpdDB/gpddb"
 )
 
 func main() {
 	dbName := "aaa"
+	db, err := gpddb.NewDb(dbName)
+	if err != nil {
+		gpddb.RemoveDb(dbName)
+		db, _ = gpddb.NewDb(dbName)
+	}
+
+	keysNum := 100000
 	key := "aaa"
 	value := "bbb"
-	reLog, _ := relog.NewRecoveryLog(dbName)
-	reLog.WriteLogRecord(relog.NewLogRecordCheckpoint())
-	reLog.WriteLogRecord(relog.NewLogRecordUserOp(gpdconst.PUT, 0, key, value))
-	reLog.WriteLogRecord(relog.NewLogRecordUserOp(gpdconst.DELETE, 1, key, value))
-	reLog.WriteLogRecord(relog.NewLogRecordAllocate(3))
-	reLog.WriteLogRecord(relog.NewLogRecordSetField(4, 40, value))
-	reLog.Display()
-	reLog.Close()
-	os.Remove(dbName + relog.RecoveryLogDefaultSuffix)
+	for i := 0; i < keysNum; i++ {
+
+		fmt.Println(i)
+
+		if err := db.Put(key+strconv.Itoa(i), value+strconv.Itoa(i)); err != nil {
+			fmt.Println("expect: ", nil, "not: ", err)
+		}
+
+	}
+	db.Close()
+	gpddb.RemoveDb(dbName)
 }

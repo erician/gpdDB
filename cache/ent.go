@@ -13,6 +13,7 @@ const (
 	EntStatValid      int8 = 1 //didn't know how to use this state
 	EntStatDelaywrite int8 = 2
 	EntStatLocked     int8 = 4 //when locked, must wait, can not write or read
+	EntStatInFreeEnts int8 = 8 //when the ent is in FreeEnts, set the bit, to avoid multiple push
 )
 
 //Ent the entry of cache

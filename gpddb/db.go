@@ -16,7 +16,6 @@ type GpdDb struct {
 	reLog     *relog.RecoveryLog
 	cache     *cache.Cache
 	superNode *cache.Ent
-	rootNode  *cache.Ent
 }
 
 //NewDb create a new db
@@ -69,9 +68,6 @@ func (db *GpdDb) Close() (err error) {
 	if err = db.superNode.WriteBlk(db.dbFile); err != nil {
 		return errors.NewErrCloseFailed(err.Error())
 	}
-	if err = db.rootNode.WriteBlk(db.dbFile); err != nil {
-		return errors.NewErrCloseFailed(err.Error())
-	}
 	if err = db.cache.Close(db.dbFile); err != nil {
 		return errors.NewErrCloseFailed(err.Error())
 	}
@@ -89,7 +85,7 @@ func (db *GpdDb) init(dbName string) (err error) {
 	if db.superNode, err = db.getSuperNode(); err != nil {
 		return errors.NewErrFailedToGetNode(err.Error())
 	}
-	if db.rootNode, err = db.getRootNode(); err != nil {
+	if _, err = db.getRootNode(); err != nil {
 		return errors.NewErrFailedToGetNode(err.Error())
 	}
 	if db.reLog, err = relog.NewRecoveryLog(dbName); err != nil {
