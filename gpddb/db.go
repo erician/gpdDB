@@ -103,7 +103,9 @@ func (db *GpdDb) getNode(blkNum int64, doesReadFromFile bool) (ent *cache.Ent, e
 }
 
 func (db *GpdDb) getSuperNode() (ent *cache.Ent, err error) {
-	return db.getNode(dataorg.SuperNodeConstValueBlkID, true)
+	ent, err = db.getNode(dataorg.SuperNodeConstValueBlkID, true)
+	ent.SetStat(ent.GetStat() | cache.EntStatDelaywrite)
+	return
 }
 
 func (db *GpdDb) getRootNode() (ent *cache.Ent, err error) {

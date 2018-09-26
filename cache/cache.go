@@ -97,6 +97,20 @@ func (cache *Cache) ReleaseEnt(ent *Ent) {
 
 //Close sync ents with delay write and sync dbfiel
 func (cache *Cache) Close(file *os.File) (err error) {
+	for i := 0; i < gpdconst.CacheEntDefaultNum; i++ {
+		sen := cache.ents[i]
+		cur := sen.Next
+		for cur != sen {
+			if (cur.GetStat() & EntStatDelaywrite) == EntStatDelaywrite {
+				if err = cur.WriteBlk(file); err != nil {
+					return
+				}
+				cur.SetStat(cur.GetStat() & (^EntStatDelaywrite))
+			}
+			cur = cur.Next
+		}
+	}
+
 	freeEntsSize := int(cache.freeEnts.Size())
 	for i := 0; i < freeEntsSize; i++ {
 		if ent := cache.freeEnts.PopLeft(); (ent.GetStat() & EntStatDelaywrite) == EntStatDelaywrite {
@@ -105,6 +119,7 @@ func (cache *Cache) Close(file *os.File) (err error) {
 			}
 		}
 	}
+
 	if err = blkio.SyncFile(file); err != nil {
 		return
 	}
