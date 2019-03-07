@@ -105,11 +105,16 @@ func (db *GpdDb) getSuperNode() (ent *cache.Ent, err error) {
 }
 
 func (db *GpdDb) getRootNode() (ent *cache.Ent, err error) {
-	//there still exist bugs
+	//there still exist bugs: the reason is we do not know whether the rootnode was written to disk.
+	//but when close db, the cache entry should be written to disk.
 	rootNodeID := db.getRootNodeID()
 	if rootNodeID == gpdconst.NotAllocatedBlockID {
 		nextBlkNum := dataorg.SuperNodeGetNextBlkNum(db.superNode.Block[:])
 		if ent, err = db.cache.GetEnt(db.dbFile, nextBlkNum, rootNodeID != gpdconst.NotAllocatedBlockID); err == nil {
+			//sync rootnode to disk first
+			dataorg.NodeInit(ent.Block[:])
+			ent.SyncBlk(db.dbFile)
+
 			dataorg.SuperNodeSetRootNodeID(db.superNode.Block[:], nextBlkNum)
 			dataorg.SuperNodeSetNextBlkNum(db.superNode.Block[:], nextBlkNum+1)
 			err = db.superNode.SyncBlk(db.dbFile)
